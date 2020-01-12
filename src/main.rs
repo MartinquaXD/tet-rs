@@ -7,6 +7,7 @@ use crossterm::terminal::{enable_raw_mode, disable_raw_mode};
 
 mod game;
 mod views;
+mod renderer;
 
 #[tokio::main]
 async fn main() {

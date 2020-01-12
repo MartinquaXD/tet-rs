@@ -3,7 +3,8 @@ use std::time::Duration;
 use tokio::time::interval;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tokio::io::{AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
+use super::renderer::{render_at, Position};
 
 pub struct Game {
     current_view: PlayView,
@@ -22,7 +23,7 @@ impl Default for Game {
 impl Game {
     pub async fn render(state_handle: Arc<Mutex<Game>>) -> tokio::io::Result<()> {
         let mut screen = tokio::io::stdout();
-        let mut render_loop = interval(Duration::from_millis(1000 / 1));
+        let mut render_loop = interval(Duration::from_millis(1000 / 60));
         loop {
             render_loop.tick().await;
             screen.write_all(termion::clear::All.as_ref()).await?;
@@ -31,7 +32,8 @@ impl Game {
                 if !game.running {
                     return Ok(());
                 }
-                game.current_view.render_at(&mut screen, 0, 0).await?;
+
+                game.current_view.render_at(&mut screen, Position{x: 0, y: 0}).await?;
             }
             &mut screen.flush().await?;
         }
@@ -48,9 +50,9 @@ impl Game {
                 Some(Ok(event)) => {
                     let mut game = state_handle.lock().await;
                     if !game.handle_input(&event) {
-                        return
+                        return;
                     }
-                },
+                }
                 _ => {
                     let mut game = state_handle.lock().await;
                     game.running = false;
@@ -61,20 +63,21 @@ impl Game {
     }
 
     fn handle_input(&mut self, event: &crossterm::event::Event) -> bool {
-//        println!("handle event {:#?}", event);
         use crossterm::event::{Event, KeyEvent, KeyCode};
 
         match event {
-            Event::Key(KeyEvent{code, modifiers: _}) => {
+            Event::Key(KeyEvent { code, modifiers: _ }) => {
                 match code {
                     KeyCode::Char('q') => {
                         self.running = false;
-                        false
-                    }
-                    _ => true
+                        return false;
+                    },
+                    _ => self.current_view.handle_input(event)
                 }
             }
-            _ => true
-        }
+            _ => ()
+        };
+
+        true
     }
 }

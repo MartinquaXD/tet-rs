@@ -1,42 +1,59 @@
 use super::field;
-use super::stones::{Stone};
 use termion::{color, cursor};
 use termion::color::Bg;
 use tokio::io::{AsyncWriteExt, AsyncWrite};
+use crate::renderer::{Texture, Position, render_at};
+use super::stones::Stone;
 
 
 pub struct PlayView {
     field: field::Field,
-    next_stone: Stone
+    next_stone: Texture,
+    current_stone: Stone,
 }
 
 impl Default for PlayView {
     fn default() -> Self {
+        let first_block_texture = Stone::new_random();
+        let dimensions = first_block_texture.dimensions();
+        let first_block_position = Position {
+            x: (11 + dimensions.x as i8) / 2,
+            y: -(dimensions.y as i8) + 1
+        };
+
+
         Self {
             field: field::Field::default(),
-            next_stone: Stone::new_random()
+            next_stone: Stone::new_random(),
+            current_stone: Stone::new(first_block_position, first_block_texture),
         }
     }
 }
 
 impl PlayView {
-    pub async fn render_at<W: AsyncWrite + Unpin>(&self, term: &mut W, x_target: u16, y_target: u16) -> tokio::io::Result<()>{
-        let mut out = Vec::with_capacity(200);
-        for (y, line) in self.field.0.iter().enumerate() {
-            out.extend_from_slice(cursor::Goto(x_target + 1, y_target + y as u16 + 1).to_string().as_bytes());
-            for (x, block) in line.iter().enumerate() {
-                let rnd = x as u8 * y as u8;
-                let color = match block {
-                    None => color::Rgb(rnd, rnd, rnd),
-                    Some(color) => color.to_rgb(),
-                };
-
-                out.extend_from_slice(Bg(color).to_string().as_bytes());
-                out.extend_from_slice(" ".as_bytes());
-            }
-        }
-        out.extend_from_slice(Bg(color::Reset).to_string().as_bytes());
-        term.write_all(&out).await?;
+    pub async fn render_at<W: tokio::io::AsyncWrite + Unpin>(&self, term: &mut W, position: Position) -> tokio::io::Result<()>{
+        self.field.render_at(term, position).await?;
+        render_at(term, Position{x: 10, y: 0}, &self.next_stone).await?;
+        render_at(term, self.current_stone.position, &self.current_stone.texture).await?;
+        term.write_all(cursor::Goto(1, 21).to_string().as_bytes()).await?;
+        term.write_all("q - quit\r\nesq - menu\r\narrows - move block\r\n".as_bytes()).await?;
+//        println!("pos: {:#?}, dim: {:#?}", self.current_stone.position, self.current_stone.texture.dimensions());
         return Ok(())
+    }
+
+    pub fn handle_input(&mut self, event: &crossterm::event::Event) {
+        use crossterm::event::{Event, KeyEvent, KeyCode};
+        match event {
+            Event::Key(KeyEvent{code, modifiers: _}) => {
+                match code {
+                    KeyCode::Left => self.current_stone.position.move_left(),
+                    KeyCode::Right => self.current_stone.position.move_right(),
+                    KeyCode::Down => self.current_stone.position.move_down(),
+                    KeyCode::Up => self.current_stone.position.move_up(),
+                    _ => ()
+                }
+            }
+            _ => ()
+        };
     }
 }

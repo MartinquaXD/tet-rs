@@ -1,23 +1,23 @@
-use super::stones::Color;
+use termion::{
+    cursor,
+    color:: {
+        self,
+        Bg
+    }
+};
 
-pub struct Field(
-    pub [[Option<Color>; 20]; 10]
-);
+use super::super::super::renderer::{render_at, Texture, Position};
 
-//impl Field {
-    ///Executes one progression of the play_view.
-    ///Moves blocks down and removes completed lines
-//    pub fn advance(&mut self) -> Option<u8> {
-//        None
-//    }
-//}
+pub struct Field(Texture);
 
 impl Default for Field {
     fn default() -> Self {
-        Self([[None; 20]; 10])
+        Self (Texture::new(10, 20))
     }
 }
 
-trait Drawable {
-    fn render_at(x: usize, y: usize) -> ();
+impl Field {
+    pub async fn render_at<W: tokio::io::AsyncWrite + Unpin>(&self, term: &mut W, position: Position) -> tokio::io::Result<()>{
+        render_at(term, position, &self.0).await
+    }
 }
