@@ -24,18 +24,22 @@ impl Game {
     pub async fn render(state_handle: Arc<Mutex<Game>>) -> tokio::io::Result<()> {
         let mut screen = tokio::io::stdout();
         let mut render_loop = interval(Duration::from_millis(1000 / 60));
+        let mut canvas = vec![];
+        screen.write_all(termion::clear::All.as_ref()).await?;
+        screen.flush().await?;
         loop {
+            canvas.clear();
             render_loop.tick().await;
-            screen.write_all(termion::clear::All.as_ref()).await?;
             {
                 let game = state_handle.lock().await;
                 if !game.running {
                     return Ok(());
                 }
 
-                game.current_view.render_at(&mut screen, Position{x: 0, y: 0}).await?;
+                game.current_view.render_at(&mut canvas, Position{x: 0, y: 0});
             }
-            &mut screen.flush().await?;
+            screen.write_all(&mut canvas).await?;
+            screen.flush().await?;
         }
     }
 

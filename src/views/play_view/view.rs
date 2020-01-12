@@ -31,14 +31,12 @@ impl Default for PlayView {
 }
 
 impl PlayView {
-    pub async fn render_at<W: tokio::io::AsyncWrite + Unpin>(&self, term: &mut W, position: Position) -> tokio::io::Result<()>{
-        self.field.render_at(term, position).await?;
-        render_at(term, Position{x: 10, y: 0}, &self.next_stone).await?;
-        render_at(term, self.current_stone.position, &self.current_stone.texture).await?;
-        term.write_all(cursor::Goto(1, 21).to_string().as_bytes()).await?;
-        term.write_all("q - quit\r\nesq - menu\r\narrows - move block\r\n".as_bytes()).await?;
-//        println!("pos: {:#?}, dim: {:#?}", self.current_stone.position, self.current_stone.texture.dimensions());
-        return Ok(())
+    pub fn render_at(&self, canvas: &mut Vec<u8>, position: Position){
+        self.field.render_at(canvas, position);
+        render_at(canvas, Position{x: 10, y: 0}, &self.next_stone);
+        render_at(canvas, self.current_stone.position, &self.current_stone.texture);
+        canvas.extend_from_slice(cursor::Goto(1, 21).to_string().as_bytes());
+        canvas.extend_from_slice("q - quit\r\nesq - menu\r\narrows - move block\r\n".as_bytes());
     }
 
     pub fn handle_input(&mut self, event: &crossterm::event::Event) {

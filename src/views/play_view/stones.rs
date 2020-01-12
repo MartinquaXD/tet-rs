@@ -15,8 +15,8 @@ impl Stone {
         }
     }
 
-    pub async fn render_at<W: tokio::io::AsyncWrite + Unpin>(&self, term: &mut W, x_target: u16, y_target: u16) -> tokio::io::Result<()> {
-        render_at(term, self.position, &self.texture).await
+    pub fn render_at(&self, canvas: &mut Vec<u8>) {
+        render_at(canvas, self.position, &self.texture);
     }
 
     pub fn new_i() -> Texture {

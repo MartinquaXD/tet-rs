@@ -73,7 +73,7 @@ impl Texture {
 }
 
 
-pub async fn render_at<W: tokio::io::AsyncWrite + Unpin>(term: &mut W, position: Position, texture: &Texture) -> tokio::io::Result<()> {
+pub fn render_at(canvas: &mut Vec<u8>, position: Position, texture: &Texture) {
     use tokio::io::AsyncWriteExt;
     use termion::{
         cursor,
@@ -83,8 +83,6 @@ pub async fn render_at<W: tokio::io::AsyncWrite + Unpin>(term: &mut W, position:
         }
     };
     use std::cmp::max;
-
-    let mut out = Vec::new();
 
     let (window_x, window_y) = crossterm::terminal::size().unwrap();
     let dimensions = texture.dimensions();
@@ -100,7 +98,7 @@ pub async fn render_at<W: tokio::io::AsyncWrite + Unpin>(term: &mut W, position:
         let y_in_terminal_coords = (position.y + 1 + y as i8 + skip_rows as i8) as u16;
         let x_in_terminal_coords = (position.x + 1 + skip_columns as i8) as u16;
 
-        out.extend_from_slice(cursor::Goto(x_in_terminal_coords, y_in_terminal_coords).to_string().as_bytes());
+        canvas.extend_from_slice(cursor::Goto(x_in_terminal_coords, y_in_terminal_coords).to_string().as_bytes());
         for (x, block) in line.iter().enumerate().skip(skip_columns) {
             if x > window_x as usize {
                 break;
@@ -111,11 +109,9 @@ pub async fn render_at<W: tokio::io::AsyncWrite + Unpin>(term: &mut W, position:
                 Some(color) => color.to_rgb().bg_string().into(),
             };
 
-            out.extend_from_slice(color.as_slice());
-            out.extend_from_slice(" ".as_bytes());
+            canvas.extend_from_slice(color.as_slice());
+            canvas.extend_from_slice(" ".as_bytes());
         }
     }
-    out.extend_from_slice(Bg(color::Reset).to_string().as_bytes());
-    term.write_all(&out).await?;
-    return Ok(());
+    canvas.extend_from_slice(Bg(color::Reset).to_string().as_bytes());
 }

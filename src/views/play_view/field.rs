@@ -17,7 +17,7 @@ impl Default for Field {
 }
 
 impl Field {
-    pub async fn render_at<W: tokio::io::AsyncWrite + Unpin>(&self, term: &mut W, position: Position) -> tokio::io::Result<()>{
-        render_at(term, position, &self.0).await
+    pub fn render_at(&self, canvas: &mut Vec<u8>, position: Position){
+        render_at(canvas, position, &self.0);
     }
 }
