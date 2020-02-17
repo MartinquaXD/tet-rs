@@ -1,4 +1,4 @@
-use crate::renderer::{Texture, Position, Color::{self, *}, render_at};
+use crate::renderer::{Texture, Position, Color::{self, *}, Tile, Canvas};
 use rand::{thread_rng, Rng};
 
 #[derive(Debug, Clone)]
@@ -15,58 +15,58 @@ impl Stone {
         }
     }
 
-    pub fn render_at(&self, canvas: &mut Vec<u8>) {
-        render_at(canvas, self.position, &self.texture);
+    pub fn render_at(&self, canvas: &mut Canvas) {
+        canvas.add_texture(&self.texture, self.position);
     }
 
     pub fn new_i() -> Texture {
         Texture(vec![
-            vec![Some(LightBlue)],
-            vec![Some(LightBlue)],
-            vec![Some(LightBlue)],
-            vec![Some(LightBlue)],
+            vec![Some(Tile::new_background(LightBlue))],
+            vec![Some(Tile::new_background(LightBlue))],
+            vec![Some(Tile::new_background(LightBlue))],
+            vec![Some(Tile::new_background(LightBlue))],
         ])
     }
 
     pub fn new_z() -> Texture {
         Texture(vec![
-            vec![Some(Red), Some(Red), None],
-            vec![None, Some(Red), Some(Red)],
+            vec![Some(Tile::new_background(Red)), Some(Tile::new_background(Red)), None],
+            vec![None, Some(Tile::new_background(Red)), Some(Tile::new_background(Red))],
         ])
     }
 
     pub fn new_s() -> Texture {
         Texture(vec![
-            vec![None, Some(Green), Some(Green)],
-            vec![Some(Green), Some(Green), None],
+            vec![None, Some(Tile::new_background(Green)), Some(Tile::new_background(Green))],
+            vec![Some(Tile::new_background(Green)), Some(Tile::new_background(Green)), None],
         ])
     }
 
     pub fn new_j() -> Texture {
         Texture(vec![
-            vec![Some(DarkBlue), None, None],
-            vec![Some(DarkBlue), Some(DarkBlue), Some(DarkBlue)],
+            vec![Some(Tile::new_background(DarkBlue)), None, None],
+            vec![Some(Tile::new_background(DarkBlue)), Some(Tile::new_background(DarkBlue)), Some(Tile::new_background(DarkBlue))],
         ])
     }
 
     pub fn new_l() -> Texture {
         Texture(vec![
-            vec![None, None, Some(Orange)],
-            vec![Some(Orange), Some(Orange), Some(Orange)],
+            vec![None, None, Some(Tile::new_background(Orange))],
+            vec![Some(Tile::new_background(Orange)), Some(Tile::new_background(Orange)), Some(Tile::new_background(Orange))],
         ])
     }
 
     pub fn new_o() -> Texture {
         Texture(vec![
-            vec![Some(Yellow), Some(Yellow)],
-            vec![Some(Yellow), Some(Yellow)],
+            vec![Some(Tile::new_background(Yellow)), Some(Tile::new_background(Yellow))],
+            vec![Some(Tile::new_background(Yellow)), Some(Tile::new_background(Yellow))],
         ])
     }
 
     pub fn new_t() -> Texture {
         Texture(vec![
-            vec![None, Some(Purple), None],
-            vec![Some(Purple), Some(Purple), Some(Purple)],
+            vec![None, Some(Tile::new_background(Purple)), None],
+            vec![Some(Tile::new_background(Purple)), Some(Tile::new_background(Purple)), Some(Tile::new_background(Purple))],
         ])
     }
 

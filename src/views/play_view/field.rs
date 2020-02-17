@@ -6,7 +6,8 @@ use termion::{
     }
 };
 
-use super::super::super::renderer::{render_at, Texture, Position};
+use super::super::super::renderer::{Texture, Position};
+use crate::renderer::Canvas;
 
 pub struct Field(Texture);
 
@@ -17,7 +18,7 @@ impl Default for Field {
 }
 
 impl Field {
-    pub fn render_at(&self, canvas: &mut Vec<u8>, position: Position){
-        render_at(canvas, position, &self.0);
+    pub fn render_at(&self, canvas: &mut Canvas, position: Position){
+        canvas.add_texture( &self.0, position);
     }
 }

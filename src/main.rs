@@ -1,3 +1,5 @@
+#![feature(clamp)]
+
 use crate::game::Game;
 
 use std::sync::Arc;

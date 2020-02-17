@@ -4,7 +4,8 @@ use tokio::time::interval;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::io::AsyncWriteExt;
-use super::renderer::{render_at, Position};
+use super::renderer::{Position};
+use crate::renderer::Canvas;
 
 pub struct Game {
     current_view: PlayView,
@@ -24,8 +25,9 @@ impl Game {
     pub async fn render(state_handle: Arc<Mutex<Game>>) -> tokio::io::Result<()> {
         let mut screen = tokio::io::stdout();
         let mut render_loop = interval(Duration::from_millis(1000 / 60));
-        let mut canvas = vec![];
+        let mut canvas = Canvas::default();
         screen.write_all(termion::clear::All.as_ref()).await?;
+        screen.write_all(termion::cursor::Hide.as_ref()).await?;
         screen.flush().await?;
         loop {
             canvas.clear();
@@ -38,7 +40,7 @@ impl Game {
 
                 game.current_view.render_at(&mut canvas, Position{x: 0, y: 0});
             }
-            screen.write_all(&mut canvas).await?;
+            screen.write_all(canvas.to_printable_string().as_bytes()).await?;
             screen.flush().await?;
         }
     }

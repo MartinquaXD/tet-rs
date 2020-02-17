@@ -10,6 +10,8 @@ pub enum Color {
     DarkBlue,
     Orange,
     Purple,
+    White,
+    Black,
 }
 
 impl Color {
@@ -23,7 +25,9 @@ impl Color {
             LightBlue => Rgb(0, 170, 255),
             DarkBlue => Rgb(15, 32, 189),
             Orange => Rgb(245, 167, 66),
-            Purple => Rgb(125, 15, 189)
+            Purple => Rgb(125, 15, 189),
+            White => Rgb(255, 255, 255),
+            Black => Rgb(0, 0, 0)
         }
     }
 }
@@ -53,65 +57,120 @@ impl Position {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct Dimensions { pub x: usize, pub y: usize }
+#[derive(Debug, Clone, Copy)]
+pub struct Dimensions { pub width: usize, pub height: usize }
 
-#[derive(Debug, Clone)]
-pub struct Texture(pub Vec<Vec<Option<Color>>>);
+#[derive(Copy, Clone, Debug)]
+pub struct Tile {
+    foreground: Color,
+    background: Color,
+    text: char,
+}
 
-impl Texture {
-    pub fn new(x: usize, y: usize) -> Self {
-        Self(vec![vec![None; x]; y])
-    }
-
-    pub fn dimensions(&self) -> Dimensions {
-        Dimensions {
-            x: self.0[0].len(),
-            y: self.0.len(),
+impl Default for Tile {
+    fn default() -> Self {
+        Self {
+            foreground: Color::White,
+            background: Color::Black,
+            text: ' ',
         }
     }
 }
 
+impl Tile {
+    pub fn new_background(background: Color) -> Self {
+        Tile { background, foreground: Color::White, text: ' ' }
+    }
 
-pub fn render_at(canvas: &mut Vec<u8>, position: Position, texture: &Texture) {
-    use tokio::io::AsyncWriteExt;
-    use termion::{
-        cursor,
-        color::{
-            self,
-            Bg
-        }
-    };
-    use std::cmp::max;
+    pub fn to_printable_string(&self) -> String {
+        format!("{}{}{}", self.background.to_rgb().bg_string(),
+                self.foreground.to_rgb().fg_string(),
+                self.text)
+    }
+}
 
-    let (window_x, window_y) = crossterm::terminal::size().unwrap();
-    let dimensions = texture.dimensions();
+#[derive(Debug, Clone)]
+pub struct Texture(pub Vec<Vec<Option<Tile>>>);
 
-    let skip_rows = max(-position.y as isize, 0) as usize;
-    let skip_columns = max(-position.x as isize,  0) as usize;
+impl Texture {
+    pub fn new(width: usize, height: usize) -> Self {
+        Self(vec![vec![None; width]; height])
+    }
 
-    for (y, line) in texture.0.iter().skip(skip_rows).enumerate() {
-        if y > window_y as usize {
-            break;
-        }
-
-        let y_in_terminal_coords = (position.y + 1 + y as i8 + skip_rows as i8) as u16;
-        let x_in_terminal_coords = (position.x + 1 + skip_columns as i8) as u16;
-
-        canvas.extend_from_slice(cursor::Goto(x_in_terminal_coords, y_in_terminal_coords).to_string().as_bytes());
-        for (x, block) in line.iter().enumerate().skip(skip_columns) {
-            if x > window_x as usize {
-                break;
-            }
-
-            let color: Vec<u8> = match block {
-                None => color::Reset.bg_str().into(),
-                Some(color) => color.to_rgb().bg_string().into(),
-            };
-
-            canvas.extend_from_slice(color.as_slice());
-            canvas.extend_from_slice(" ".as_bytes());
+    pub fn dimensions(&self) -> Dimensions {
+        Dimensions {
+            width: self.0[0].len(),
+            height: self.0.len(),
         }
     }
-    canvas.extend_from_slice(Bg(color::Reset).to_string().as_bytes());
+}
+
+#[derive(Debug, Clone)]
+pub struct Canvas {
+    pub dimensions: Dimensions,
+    rows: Vec<Vec<Tile>>,
+}
+
+impl Default for Canvas {
+    fn default() -> Self {
+        let (width, height) = crossterm::terminal::size().unwrap();
+        Self {
+            dimensions: Dimensions { width: width as usize, height: height as usize },
+            rows: vec![vec![Tile::default(); width as usize]; height as usize],
+        }
+    }
+}
+
+impl Canvas {
+    pub fn clear(&mut self) {
+        self.rows.iter_mut().for_each(|row| {
+            row.iter_mut().for_each(|tile| {
+                *tile = Tile::default();
+            });
+        });
+    }
+
+    pub fn to_printable_string(&self) -> String {
+        //TODO create buffer with correct size
+        let mut size = self.dimensions.width * self.dimensions.height * 34;
+        let mut res = String::with_capacity(size);
+        res.push_str(termion::cursor::Goto(1, 1).to_string().as_str());
+        self.rows.iter().for_each(|row| {
+            row.iter().for_each(|tile| {
+                res.push_str(tile.to_printable_string().as_str());
+            });
+//            res.push_str("\n\r");
+        });
+        res
+    }
+
+    pub fn add_texture(&mut self, texture: &Texture, position: Position) {
+        use tokio::io::AsyncWriteExt;
+        use termion::{
+            cursor,
+            color::{
+                self,
+                Bg,
+            },
+        };
+
+        use std::cmp::{max, min};
+
+        let texture_dimensions = texture.dimensions();
+
+        let start_row_canvas = position.y.clamp(0, self.dimensions.height as i8) as usize;
+        let start_column_canvas = position.x.clamp(0, self.dimensions.width as i8) as usize;
+
+        let start_row_texture = min(max(-position.y as isize, 0) as usize, texture_dimensions.height);
+        let start_column_texture = min(max(-position.x as isize, 0) as usize, texture_dimensions.width);
+
+        //TODO fix slices out of bounds exception
+        self.rows[start_row_canvas..].iter_mut().zip(texture.0[start_row_texture..].iter()).for_each(|(canvas_row, texture_row)| {
+            canvas_row[start_column_canvas..].iter_mut().zip(texture_row[start_column_texture..].iter()).for_each(|(canvas_color, texture_color)| {
+                if let Some(tile) = texture_color {
+                    *canvas_color = tile.clone();
+                }
+            });
+        });
+    }
 }
