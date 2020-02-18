@@ -1,3 +1,3 @@
 pub mod view;
-mod field;
+pub mod field;
 mod stones;

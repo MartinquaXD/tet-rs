@@ -8,8 +8,8 @@ use super::renderer::{Position};
 use crate::renderer::Canvas;
 
 pub struct Game {
-    current_view: PlayView,
-    running: bool,
+    pub current_view: PlayView,
+    pub running: bool,
 }
 
 impl Default for Game {

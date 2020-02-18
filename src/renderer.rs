@@ -1,7 +1,8 @@
 use termion::color::Rgb;
 use std::ops::Add;
+use crate::views::play_view::field::Field;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialOrd, PartialEq)]
 pub enum Color {
     Red,
     Yellow,
@@ -12,6 +13,7 @@ pub enum Color {
     Purple,
     White,
     Black,
+    Gray,
 }
 
 impl Color {
@@ -27,7 +29,8 @@ impl Color {
             Orange => Rgb(245, 167, 66),
             Purple => Rgb(125, 15, 189),
             White => Rgb(255, 255, 255),
-            Black => Rgb(0, 0, 0)
+            Black => Rgb(0, 0, 0),
+            Gray => Rgb(100, 100, 100)
         }
     }
 }
@@ -37,6 +40,15 @@ impl Color {
 pub struct Position {
     pub x: i8,
     pub y: i8,
+}
+
+impl Default for Position {
+    fn default() -> Self {
+        Self {
+            x: 0,
+            y: 0
+        }
+    }
 }
 
 impl Position {
@@ -62,9 +74,9 @@ pub struct Dimensions { pub width: usize, pub height: usize }
 
 #[derive(Copy, Clone, Debug)]
 pub struct Tile {
-    foreground: Color,
-    background: Color,
-    text: char,
+    pub foreground: Color,
+    pub background: Color,
+    pub text: char,
 }
 
 impl Default for Tile {
@@ -90,17 +102,23 @@ impl Tile {
 }
 
 #[derive(Debug, Clone)]
-pub struct Texture(pub Vec<Vec<Option<Tile>>>);
+pub struct Texture {
+    pub pixels: Vec<Vec<Option<Tile>>>,
+    pub dimensions: Dimensions,
+}
 
 impl Texture {
-    pub fn new(width: usize, height: usize) -> Self {
-        Self(vec![vec![None; width]; height])
+    pub fn new(dimensions: Dimensions) -> Self {
+        Self {
+            pixels: vec![vec![None; dimensions.width]; dimensions.height],
+            dimensions,
+        }
     }
 
-    pub fn dimensions(&self) -> Dimensions {
-        Dimensions {
-            width: self.0[0].len(),
-            height: self.0.len(),
+    pub fn new_background(dimensions: Dimensions, background: Color) -> Self {
+        Self {
+            pixels: vec![vec![Some(Tile::new_background(background)); dimensions.width]; dimensions.height],
+            dimensions,
         }
     }
 }
@@ -132,14 +150,13 @@ impl Canvas {
 
     pub fn to_printable_string(&self) -> String {
         //TODO create buffer with correct size
-        let mut size = self.dimensions.width * self.dimensions.height * 34;
+        let size = self.dimensions.width * self.dimensions.height * 34;
         let mut res = String::with_capacity(size);
         res.push_str(termion::cursor::Goto(1, 1).to_string().as_str());
         self.rows.iter().for_each(|row| {
             row.iter().for_each(|tile| {
                 res.push_str(tile.to_printable_string().as_str());
             });
-//            res.push_str("\n\r");
         });
         res
     }
@@ -156,7 +173,7 @@ impl Canvas {
 
         use std::cmp::{max, min};
 
-        let texture_dimensions = texture.dimensions();
+        let texture_dimensions = texture.dimensions;
 
         let start_row_canvas = position.y.clamp(0, self.dimensions.height as i8) as usize;
         let start_column_canvas = position.x.clamp(0, self.dimensions.width as i8) as usize;
@@ -165,7 +182,7 @@ impl Canvas {
         let start_column_texture = min(max(-position.x as isize, 0) as usize, texture_dimensions.width);
 
         //TODO fix slices out of bounds exception
-        self.rows[start_row_canvas..].iter_mut().zip(texture.0[start_row_texture..].iter()).for_each(|(canvas_row, texture_row)| {
+        self.rows[start_row_canvas..].iter_mut().zip(texture.pixels[start_row_texture..].iter()).for_each(|(canvas_row, texture_row)| {
             canvas_row[start_column_canvas..].iter_mut().zip(texture_row[start_column_texture..].iter()).for_each(|(canvas_color, texture_color)| {
                 if let Some(tile) = texture_color {
                     *canvas_color = tile.clone();
