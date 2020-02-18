@@ -24,7 +24,7 @@ impl Default for Field {
 
 impl Field {
     pub fn render_at(&self, canvas: &mut Canvas, position: Position) {
-        canvas.add_texture(&self.texture, position);
+        canvas.add_texture(&self.texture, &position);
     }
 
     pub fn highest_point_in_column(&self, column: usize) -> Option<usize> {

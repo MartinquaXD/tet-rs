@@ -17,7 +17,7 @@ impl Stone {
     }
 
     pub fn render_at(&self, canvas: &mut Canvas) {
-        canvas.add_texture(&self.texture, self.position);
+        canvas.add_texture(&self.texture, &self.position);
     }
 
     pub fn new_i() -> Texture {
@@ -94,8 +94,6 @@ impl Stone {
 
     pub fn new_random_texture() -> Texture {
         let mut rng = thread_rng();
-
-//        return Self::new_o();
 
         match rng.gen_range(0, 7) {
             0 => Self::new_i(),
@@ -216,5 +214,24 @@ impl Stone {
         }
 
         false
+    }
+
+    pub fn rotate(&mut self) -> bool {
+        //TODO detect collisions on rotate
+        let old_data = std::mem::replace(&mut self.texture.pixels, vec![vec![None; self.texture.dimensions.height]; self.texture.dimensions.width]);
+
+        for (row_index, row) in old_data.into_iter().rev().enumerate() {
+            for (column_index, tile) in row.into_iter().enumerate() {
+                let other = self.texture.pixels.get_mut(column_index).unwrap().get_mut(row_index).unwrap();
+                *other = tile;
+            }
+        }
+
+        self.texture.dimensions = Dimensions {
+            width: self.texture.dimensions.height,
+            height: self.texture.dimensions.width,
+        };
+
+        true
     }
 }

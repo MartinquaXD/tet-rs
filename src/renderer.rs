@@ -94,6 +94,10 @@ impl Tile {
         Tile { background, foreground: Color::White, text: ' ' }
     }
 
+    pub fn new_character(text: char, background: Color, foreground: Color) -> Self {
+        Tile { background, foreground, text }
+    }
+
     pub fn to_printable_string(&self) -> String {
         format!("{}{}{}", self.background.to_rgb().bg_string(),
                 self.foreground.to_rgb().fg_string(),
@@ -161,7 +165,20 @@ impl Canvas {
         res
     }
 
-    pub fn add_texture(&mut self, texture: &Texture, position: Position) {
+    pub fn add_text(&mut self, text: &str, background: Color, foreground: Color, position: &Position) {
+        let texture_to_draw: Vec<_> = text.chars().map(|letter| {
+            Some(Tile::new_character(letter, background, foreground))
+        }).collect();
+
+        let texture = Texture {
+            pixels: vec![texture_to_draw],
+            dimensions: Dimensions {width: text.len(), height: 1}
+        };
+
+        self.add_texture(&texture, position);
+    }
+
+    pub fn add_texture(&mut self, texture: &Texture, position: &Position) {
         use tokio::io::AsyncWriteExt;
         use termion::{
             cursor,
@@ -181,7 +198,6 @@ impl Canvas {
         let start_row_texture = min(max(-position.y as isize, 0) as usize, texture_dimensions.height);
         let start_column_texture = min(max(-position.x as isize, 0) as usize, texture_dimensions.width);
 
-        //TODO fix slices out of bounds exception
         self.rows[start_row_canvas..].iter_mut().zip(texture.pixels[start_row_texture..].iter()).for_each(|(canvas_row, texture_row)| {
             canvas_row[start_column_canvas..].iter_mut().zip(texture_row[start_column_texture..].iter()).for_each(|(canvas_color, texture_color)| {
                 if let Some(tile) = texture_color {

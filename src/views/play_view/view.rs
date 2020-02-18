@@ -2,7 +2,7 @@ use super::field;
 use termion::{color, cursor};
 use termion::color::Bg;
 use tokio::io::{AsyncWriteExt, AsyncWrite};
-use crate::renderer::{Texture, Position, Canvas, Dimensions};
+use crate::renderer::{Texture, Position, Canvas, Dimensions, Color};
 use super::stones::Stone;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -16,6 +16,9 @@ pub struct PlayView {
     current_stone: Stone,
     time_per_tick: Duration,
     time_until_next_tick: Duration,
+    points: u64,
+    ticks: u32,
+    level: u8
 }
 
 impl Default for PlayView {
@@ -29,6 +32,9 @@ impl Default for PlayView {
             current_stone: Stone::new(first_block_position, first_block_texture),
             time_until_next_tick: Duration::from_millis(1000),
             time_per_tick: Duration::from_millis(1000),
+            ticks: 0,
+            points: 0,
+            level: 1
         }
     }
 }
@@ -36,8 +42,14 @@ impl Default for PlayView {
 impl PlayView {
     pub fn render_at(&self, canvas: &mut Canvas, position: Position) {
         self.field.render_at(canvas, position);
-        canvas.add_texture(&self.next_stone, Position { x: 10, y: 0 });
-        canvas.add_texture(&self.current_stone.texture, self.current_stone.position);
+        canvas.add_texture(&self.next_stone, &Position { x: 10, y: 0 });
+        canvas.add_texture(&self.current_stone.texture, &self.current_stone.position);
+        canvas.add_text(format!("level: {}", self.level).as_str(), Color::Black, Color::Orange, &Position {
+            x: 10, y: 6
+        });
+        canvas.add_text(format!("points: {}", self.points).as_str(), Color::Black, Color::Orange, &Position {
+            x: 10, y: 7
+        });
         //TODO add text to canvas
 //        canvas.extend_from_slice(cursor::Goto(1, 21).to_string().as_bytes());
 //        canvas.extend_from_slice("q - quit\r\nesq - menu\r\narrows - move block\r\n".as_bytes());
@@ -70,7 +82,7 @@ impl PlayView {
                     KeyCode::Left => self.current_stone.move_left(&self.field),
                     KeyCode::Right => self.current_stone.move_right(&self.field),
                     KeyCode::Down => self.current_stone.move_down(&self.field),
-                    KeyCode::Up => self.current_stone.move_up(&self.field),
+                    KeyCode::Up => self.current_stone.rotate(),
                     KeyCode::Char(' ') => {
                         self.spawn_next_stone();
                         false
@@ -82,10 +94,21 @@ impl PlayView {
         };
     }
 
+    fn update_score(&mut self, deleted_lines: usize) {
+        if deleted_lines == 0 {
+            return;
+        }
+
+        let action_score = 2u8.pow(deleted_lines as u32) as u64 * self.level as u64;
+        self.points += action_score;
+        self.level = 1 + (self.points / 10) as u8;
+    }
+
     fn handle_tick(&mut self) {
         if !self.current_stone.move_down(&self.field) {
             self.spawn_next_stone();
-            self.field.try_delete_lines();
+            let deleted_lines = self.field.try_delete_lines();
+            self.update_score(deleted_lines);
         }
     }
 
@@ -102,6 +125,8 @@ impl PlayView {
         let mut game = game_state.lock().await;
         let play_view = &mut game.current_view;
         play_view.handle_tick();
+        play_view.ticks += 1;
+        play_view.time_per_tick = Duration::from_millis(std::cmp::max(100, (play_view.time_per_tick.as_millis() as u64 - 5).into()));
         play_view.time_until_next_tick = play_view.time_per_tick;
     }
 
