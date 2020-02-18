@@ -1,4 +1,4 @@
-#![feature(clamp, async_closure)]
+#![feature(clamp, async_closure, drain_filter)]
 
 use crate::game::Game;
 

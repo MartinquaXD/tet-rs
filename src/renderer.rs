@@ -72,7 +72,7 @@ impl Position {
 #[derive(Debug, Clone, Copy)]
 pub struct Dimensions { pub width: usize, pub height: usize }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct Tile {
     pub foreground: Color,
     pub background: Color,

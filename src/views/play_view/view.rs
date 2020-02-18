@@ -82,8 +82,11 @@ impl PlayView {
         };
     }
 
-    pub fn handle_tick(&mut self) {
-        self.current_stone.move_down(&self.field);
+    fn handle_tick(&mut self) {
+        if !self.current_stone.move_down(&self.field) {
+            self.spawn_next_stone();
+            self.field.try_delete_lines();
+        }
     }
 
     async fn wait_for_next_tick(game_state: Arc<Mutex<Game>>) {

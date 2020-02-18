@@ -95,6 +95,8 @@ impl Stone {
     pub fn new_random_texture() -> Texture {
         let mut rng = thread_rng();
 
+//        return Self::new_o();
+
         match rng.gen_range(0, 7) {
             0 => Self::new_i(),
             1 => Self::new_j(),
@@ -161,7 +163,7 @@ impl Stone {
         let not_on_left_border = self.position.x > 0;
         let mut fields_to_the_left = self.left_most_points();
         fields_to_the_left.iter_mut().for_each(|pos| {
-            pos.x - 1;
+            pos.x -= 1;
         });
         not_on_left_border && field.all_positions_free(fields_to_the_left.as_slice())
     }
@@ -170,7 +172,7 @@ impl Stone {
         let not_on_right_border = self.position.x as usize + self.texture.dimensions.width <= field.texture.dimensions.width;
         let mut fields_to_the_right = self.right_most_points();
         fields_to_the_right.iter_mut().for_each(|pos| {
-            pos.x + 1;
+            pos.x += 1;
         });
         not_on_right_border && field.all_positions_free(fields_to_the_right.as_slice())
     }
@@ -179,33 +181,33 @@ impl Stone {
         let not_at_bottom = (self.position.y + self.texture.dimensions.height as i8) < 20;
         let mut bottom_fields = self.bottom_points();
         bottom_fields.iter_mut().for_each(|pos| {
-            pos.y + 1;
+            pos.y += 1;
         });
         not_at_bottom && field.all_positions_free(bottom_fields.as_slice())
     }
 
     pub fn move_down(&mut self, field: &Field) -> bool {
-        if self.can_move_down(&field) {
+        let allow_move = self.can_move_down(&field);
+        if allow_move {
             self.position.move_down();
-            return true;
         }
-        false
+        allow_move
     }
 
     pub fn move_left(&mut self, field: &Field) -> bool {
-        if self.can_move_left(&field) {
+        let allow_move = self.can_move_left(&field);
+        if allow_move {
             self.position.move_left();
         }
-
-        false
+        allow_move
     }
 
     pub fn move_right(&mut self, field: &Field) -> bool {
-        if self.can_move_right(&field) {
+        let allow_move = self.can_move_right(&field);
+        if allow_move {
             self.position.move_right();
         }
-
-        false
+        allow_move
     }
 
     pub fn move_up(&mut self, field: &Field) -> bool {

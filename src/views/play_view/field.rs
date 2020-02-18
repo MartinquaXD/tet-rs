@@ -8,6 +8,7 @@ use termion::{
 
 use super::super::super::renderer::{Texture, Position};
 use crate::renderer::{Canvas, Dimensions, Color, Tile};
+use std::process::exit;
 
 pub struct Field {
     pub texture: Texture
@@ -72,6 +73,22 @@ impl Field {
         })
     }
 
+    pub fn try_delete_lines(&mut self) -> usize {
+        let mut empty_lines: Vec<_> = self.texture.pixels.drain_filter(|row |{
+            let is_full = row.iter().all(|tile| tile.as_ref().unwrap().background != Color::Gray);
+            if is_full {
+                row.iter_mut().for_each(|tile| tile.as_mut().unwrap().background = Color::Gray);
+            }
+            is_full
+        }).collect();
+
+        let old_lines = std::mem::replace(&mut self.texture.pixels, vec![]);
+        let lines_deleted = empty_lines.len();
+        empty_lines.extend(old_lines);
+        self.texture.pixels = empty_lines;
+        lines_deleted
+    }
+
     pub fn add_to_texture(&mut self, texture: Texture, position: Position) {
         for (row_index, row) in texture.pixels.iter().enumerate() {
             for (column_index, tile_to_add) in row.iter().enumerate() {
@@ -82,7 +99,7 @@ impl Field {
                     };
 
                     self.get_tile_at_pos_mut(&pos).map(|current_tile| {
-                        *current_tile = *tile_to_add;
+                        *current_tile = tile_to_add.clone();
                     });
                 }
             }
