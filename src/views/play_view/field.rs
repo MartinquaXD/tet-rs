@@ -72,8 +72,8 @@ impl Field {
     }
 
     pub fn add_to_texture(&mut self, texture: Texture, position: Position) {
-        for (row_index, row) in texture.pixels.iter().enumerate() {
-            for (column_index, tile_to_add) in row.iter().enumerate() {
+        for (row_index, row) in texture.pixels.into_iter().enumerate() {
+            for (column_index, tile_to_add) in row.into_iter().enumerate() {
                 if let Some(tile_to_add) = tile_to_add {
                     let pos = Position {
                         x: position.x + column_index as i8,
@@ -81,7 +81,7 @@ impl Field {
                     };
 
                     self.get_tile_at_pos_mut(&pos).map(|current_tile| {
-                        *current_tile = tile_to_add.clone();
+                        *current_tile = tile_to_add;
                     });
                 }
             }
