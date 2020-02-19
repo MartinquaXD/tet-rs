@@ -1,14 +1,4 @@
-use termion::{
-    cursor,
-    color::{
-        self,
-        Bg,
-    },
-};
-
-use super::super::super::renderer::{Texture, Position};
-use crate::renderer::{Canvas, Dimensions, Color, Tile};
-use std::process::exit;
+use crate::rendering::renderer::{Texture, Dimensions, Color, Position, Tile, Canvas};
 
 pub struct Field {
     pub texture: Texture
@@ -25,22 +15,6 @@ impl Default for Field {
 impl Field {
     pub fn render_at(&self, canvas: &mut Canvas, position: Position) {
         canvas.add_texture(&self.texture, &position);
-    }
-
-    pub fn highest_point_in_column(&self, column: usize) -> Option<usize> {
-        if column > self.texture.dimensions.width {
-            return None;
-        }
-
-        let mut result = 0usize;
-        for (index, row) in self.texture.pixels.iter().enumerate() {
-            if let Some(Some(tile)) = row.get(column) {
-                result = self.texture.dimensions.height - index;
-                break;
-            }
-        }
-
-        Some(result)
     }
 
     pub fn get_tile_at_pos(&self, position: &Position) -> Option<&Tile> {
@@ -65,21 +39,29 @@ impl Field {
 
     pub fn all_positions_free(&self, positions: &[Position]) -> bool {
         positions.iter().all(|position| {
-            if let Some(tile) = self.get_tile_at_pos(position) {
-                tile.background == Color::Gray
-            } else {
-                false
+            match self.get_tile_at_pos(position) {
+                Some(tile) => tile.background == Color::Gray,
+                None => true
             }
         })
     }
 
+    fn row_is_full(row: &Vec<Option<Tile>>) -> bool {
+        row.iter().all(|tile| tile.as_ref().unwrap().background != Color::Gray)
+    }
+
+    fn clear_row(row: &mut Vec<Option<Tile>>) {
+        row.iter_mut().for_each(|tile| tile.as_mut().unwrap().background = Color::Gray)
+    }
+
     pub fn try_delete_lines(&mut self) -> usize {
         let mut empty_lines: Vec<_> = self.texture.pixels.drain_filter(|row |{
-            let is_full = row.iter().all(|tile| tile.as_ref().unwrap().background != Color::Gray);
-            if is_full {
-                row.iter_mut().for_each(|tile| tile.as_mut().unwrap().background = Color::Gray);
+            if Self::row_is_full(row) {
+                Self::clear_row(row);
+                true
+            } else {
+                false
             }
-            is_full
         }).collect();
 
         let old_lines = std::mem::replace(&mut self.texture.pixels, vec![]);
@@ -104,5 +86,9 @@ impl Field {
                 }
             }
         }
+    }
+
+    pub fn dimensions(&self) -> &Dimensions {
+        &self.texture.dimensions
     }
 }

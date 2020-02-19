@@ -1,6 +1,6 @@
-use crate::renderer::{Texture, Position, Color::{self, *}, Tile, Canvas, Dimensions};
 use rand::{thread_rng, Rng};
 use crate::views::play_view::field::Field;
+use crate::rendering::renderer::{Texture, Position, Canvas, Tile, Color::*, Dimensions};
 
 #[derive(Debug, Clone)]
 pub struct Stone {
@@ -160,78 +160,65 @@ impl Stone {
     fn can_move_left(&self, field: &Field) -> bool {
         let not_on_left_border = self.position.x > 0;
         let mut fields_to_the_left = self.left_most_points();
-        fields_to_the_left.iter_mut().for_each(|pos| {
-            pos.x -= 1;
-        });
+        fields_to_the_left.iter_mut().for_each(|pos| pos.move_left());
         not_on_left_border && field.all_positions_free(fields_to_the_left.as_slice())
     }
 
     fn can_move_right(&self, field: &Field) -> bool {
-        let not_on_right_border = self.position.x as usize + self.texture.dimensions.width <= field.texture.dimensions.width;
+        let not_on_right_border = self.position.x as usize + self.texture.dimensions.width < field.texture.dimensions.width;
         let mut fields_to_the_right = self.right_most_points();
-        fields_to_the_right.iter_mut().for_each(|pos| {
-            pos.x += 1;
-        });
+        fields_to_the_right.iter_mut().for_each(|pos| pos.move_right());
         not_on_right_border && field.all_positions_free(fields_to_the_right.as_slice())
     }
 
     fn can_move_down(&mut self, field: &Field) -> bool {
         let not_at_bottom = (self.position.y + self.texture.dimensions.height as i8) < 20;
         let mut bottom_fields = self.bottom_points();
-        bottom_fields.iter_mut().for_each(|pos| {
-            pos.y += 1;
-        });
+        bottom_fields.iter_mut().for_each(|pos| pos.move_down());
         not_at_bottom && field.all_positions_free(bottom_fields.as_slice())
     }
 
     pub fn move_down(&mut self, field: &Field) -> bool {
-        let allow_move = self.can_move_down(&field);
-        if allow_move {
+        if self.can_move_down(&field) {
             self.position.move_down();
+            true
+        } else {
+            false
         }
-        allow_move
     }
 
     pub fn move_left(&mut self, field: &Field) -> bool {
-        let allow_move = self.can_move_left(&field);
-        if allow_move {
+        if self.can_move_left(&field) {
             self.position.move_left();
+            true
+        } else {
+            false
         }
-        allow_move
     }
 
     pub fn move_right(&mut self, field: &Field) -> bool {
-        let allow_move = self.can_move_right(&field);
-        if allow_move {
+        if self.can_move_right(&field) {
             self.position.move_right();
+            true
+        } else {
+            false
         }
-        allow_move
     }
 
-    pub fn move_up(&mut self, field: &Field) -> bool {
-        if true {
-            self.position.move_up();
-        }
+    fn would_be_in_bounds_after_rotation(&self, field: &Field) -> bool {
+        let new_dimensions = self.texture.dimensions.transpose_into();
+        let container = &field.texture.dimensions;
 
-        false
+        self.position.x + (new_dimensions.width as i8) <= container.width as i8 &&
+            self.position.y + (new_dimensions.height as i8) <= container.height as i8
     }
 
-    pub fn rotate(&mut self) -> bool {
-        //TODO detect collisions on rotate
-        let old_data = std::mem::replace(&mut self.texture.pixels, vec![vec![None; self.texture.dimensions.height]; self.texture.dimensions.width]);
-
-        for (row_index, row) in old_data.into_iter().rev().enumerate() {
-            for (column_index, tile) in row.into_iter().enumerate() {
-                let other = self.texture.pixels.get_mut(column_index).unwrap().get_mut(row_index).unwrap();
-                *other = tile;
-            }
+    pub fn rotate(&mut self, field: &Field) -> bool {
+        if self.would_be_in_bounds_after_rotation(field) {
+            self.texture.rotate();
+            true
+        } else {
+            false
         }
-
-        self.texture.dimensions = Dimensions {
-            width: self.texture.dimensions.height,
-            height: self.texture.dimensions.width,
-        };
-
-        true
     }
 }

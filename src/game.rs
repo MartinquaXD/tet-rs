@@ -1,33 +1,44 @@
-use super::views::play_view::view::PlayView;
 use std::time::Duration;
 use tokio::time::interval;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tokio::io::AsyncWriteExt;
-use super::renderer::{Position};
-use crate::renderer::Canvas;
+use crate::rendering::renderer::{Canvas, Position};
+use crate::views::views::PlayView;
 
 pub struct Game {
     pub current_view: PlayView,
     pub running: bool,
 }
 
-impl Default for Game {
-    fn default() -> Self {
-        Self {
+impl Game {
+    pub fn create() -> Arc<Mutex<Game>> {
+        Arc::new(Mutex::new(Game {
             current_view: PlayView::default(),
             running: true,
-        }
+        }))
     }
-}
 
-impl Game {
+    pub async fn run(game_handle: Arc<Mutex<Game>>) {
+        let read_input = Self::read_input(game_handle.clone());
+        let render = Self::render(game_handle.clone());
+        tokio::spawn(render);
+        {
+            let mut game = game_handle.lock().await;
+            game.current_view.on_create(game_handle.clone());
+        }
+        read_input.await;
+    }
+
     pub async fn render(state_handle: Arc<Mutex<Game>>) -> tokio::io::Result<()> {
+        use crossterm::terminal::{Clear, ClearType::All};
+        use crossterm::cursor::{Hide};
+
         let mut screen = tokio::io::stdout();
         let mut render_loop = interval(Duration::from_millis(1000 / 60));
         let mut canvas = Canvas::default();
-        screen.write_all(termion::clear::All.as_ref()).await?;
-        screen.write_all(termion::cursor::Hide.as_ref()).await?;
+        screen.write_all(Clear(All).to_string().as_bytes()).await?;
+        screen.write_all(Hide.to_string().as_bytes()).await?;
         screen.flush().await?;
         loop {
             canvas.clear();
@@ -38,7 +49,7 @@ impl Game {
                     return Ok(());
                 }
 
-                game.current_view.render_at(&mut canvas, Position{x: 0, y: 0});
+                game.current_view.render_at(&mut canvas, Position { x: 0, y: 0 });
             }
             screen.write_all(canvas.to_printable_string().as_bytes()).await?;
             screen.flush().await?;
@@ -77,7 +88,7 @@ impl Game {
                     KeyCode::Char('q') => {
                         self.running = false;
                         return false;
-                    },
+                    }
                     _ => self.current_view.handle_input(event)
                 }
             }
