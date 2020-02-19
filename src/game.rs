@@ -31,15 +31,10 @@ impl Game {
     }
 
     pub async fn render(state_handle: Arc<Mutex<Game>>) -> tokio::io::Result<()> {
-        use crossterm::terminal::{Clear, ClearType::All};
-        use crossterm::cursor::{Hide};
-
         let mut screen = tokio::io::stdout();
         let mut render_loop = interval(Duration::from_millis(1000 / 60));
         let mut canvas = Canvas::default();
-        screen.write_all(Clear(All).to_string().as_bytes()).await?;
-        screen.write_all(Hide.to_string().as_bytes()).await?;
-        screen.flush().await?;
+
         loop {
             canvas.clear();
             render_loop.tick().await;
