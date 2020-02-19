@@ -26,10 +26,18 @@ impl Tile {
         Tile { background, foreground, text }
     }
 
+    pub fn fill_buffer_with_printable_string(&self, buffer: &mut String) {
+        buffer.push_str("\u{1b}[48;2;");
+        buffer.push_str(self.background.to_ansi());
+        buffer.push_str(";38;2;");
+        buffer.push_str(self.foreground.to_ansi());
+        buffer.push('m');
+        buffer.push(self.text);
+    }
+
     pub fn to_printable_string(&self) -> String {
         use crossterm::style::{SetBackgroundColor, SetForegroundColor};
-
-        format!("{}{}{}", SetBackgroundColor(self.background.to_rgb()).to_string(),
+        format!("{}{}{}", SetBackgroundColor(self.background.to_rgb()).to_string().as_str(),
                 SetForegroundColor(self.foreground.to_rgb()).to_string(),
                 self.text)
     }

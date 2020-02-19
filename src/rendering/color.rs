@@ -32,4 +32,19 @@ impl Color {
             Color::Gray => Rgb{r: 100, g: 100, b: 100}
         }
     }
+
+    pub fn to_ansi(&self) -> &str {
+        match self {
+            Color::Red => "255;0;0",
+            Color::Yellow => "255,247;5",
+            Color::Green => "0;255;0",
+            Color::LightBlue => "0;170;255",
+            Color::DarkBlue => "15;32;189",
+            Color::Orange => "245;167;66",
+            Color::Purple => "125;15;189",
+            Color::White => "255;255;255",
+            Color::Black => "0;0;0",
+            Color::Gray => "100;100;100"
+        }
+    }
 }

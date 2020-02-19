@@ -7,6 +7,7 @@ use crate::rendering::color::Color;
 pub struct Canvas {
     pub dimensions: Dimensions,
     rows: Vec<Vec<Tile>>,
+    buffer: String
 }
 
 impl Default for Canvas {
@@ -15,6 +16,7 @@ impl Default for Canvas {
         Self {
             dimensions: Dimensions { width: width as usize, height: height as usize },
             rows: vec![vec![Tile::default(); width as usize]; height as usize],
+            buffer: String::with_capacity(20000)
         }
     }
 }
@@ -28,17 +30,17 @@ impl Canvas {
         });
     }
 
-    pub fn to_printable_string(&self) -> String {
-        let size = self.dimensions.width * self.dimensions.height * 34;
-        let mut res = String::with_capacity(size);
-
-        res.push_str(crossterm::cursor::MoveTo(0, 0).to_string().as_str());
+    pub fn to_printable_string(&mut self) -> &String {
+        let mut buffer = std::mem::replace(&mut self.buffer, String::new());
+        buffer.clear();
+        buffer.push_str(crossterm::cursor::MoveTo(0, 0).to_string().as_str());
         self.rows.iter().for_each(|row| {
             row.iter().for_each(|tile| {
-                res.push_str(tile.to_printable_string().as_str());
+                tile.fill_buffer_with_printable_string(&mut buffer);
             });
         });
-        res
+        self.buffer = buffer;
+        &self.buffer
     }
 
     pub fn add_themed_paragraph(&mut self, text: &[&str], mut position: Position){
