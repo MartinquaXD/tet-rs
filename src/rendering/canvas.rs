@@ -7,7 +7,7 @@ use crate::rendering::color::Color;
 pub struct Canvas {
     pub dimensions: Dimensions,
     rows: Vec<Vec<Tile>>,
-    buffer: String
+    buffer: String,
 }
 
 impl Default for Canvas {
@@ -16,7 +16,7 @@ impl Default for Canvas {
         Self {
             dimensions: Dimensions { width: width as usize, height: height as usize },
             rows: vec![vec![Tile::default(); width as usize]; height as usize],
-            buffer: String::with_capacity(20000)
+            buffer: String::with_capacity(20000),
         }
     }
 }
@@ -48,8 +48,8 @@ impl Canvas {
         &self.buffer
     }
 
-    pub fn add_themed_paragraph(&mut self, text: &[&str], mut position: Position){
-        text.iter().for_each(|text|{
+    pub fn add_themed_paragraph(&mut self, text: &[&str], mut position: Position) {
+        text.iter().for_each(|text| {
             self.add_themed_text(text, &position);
             position.move_down();
         })
@@ -66,7 +66,7 @@ impl Canvas {
 
         let texture = Texture {
             pixels: vec![texture_to_draw],
-            dimensions: Dimensions {width: text.len(), height: 1}
+            dimensions: Dimensions { width: text.len(), height: 1 },
         };
 
         self.add_texture(texture, position);
@@ -83,17 +83,18 @@ impl Canvas {
         let start_row_texture = min(max(-position.y as isize, 0) as usize, texture_dimensions.height);
         let start_column_texture = min(max(-position.x as isize, 0) as usize, texture_dimensions.width);
 
-
-
         let texture_row_iterator = texture.pixels.into_iter().skip(start_row_texture);
 
-        self.rows[start_row_canvas..].iter_mut().zip(texture_row_iterator).for_each(|(canvas_row, texture_row)| {
-            let texture_column_iterator = texture_row.into_iter().skip(start_column_texture);
-            canvas_row[start_column_canvas..].iter_mut().zip(texture_column_iterator).for_each(|(canvas_color, texture_color)| {
-                if let Some(tile) = texture_color {
-                    *canvas_color = tile;
-                }
+        self.rows.iter_mut().skip(start_row_canvas).zip(texture_row_iterator)
+            .for_each(|(canvas_row, texture_row)| {
+                let texture_column_iterator = texture_row.into_iter().skip(start_column_texture);
+
+                canvas_row.iter_mut().skip(start_column_canvas).zip(texture_column_iterator)
+                    .for_each(|(canvas_color, texture_color)| {
+                        if let Some(tile) = texture_color {
+                            *canvas_color = tile;
+                        }
+                    });
             });
-        });
     }
 }

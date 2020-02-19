@@ -36,7 +36,7 @@ impl Color {
     pub fn to_ansi(&self) -> &str {
         match self {
             Color::Red => "255;0;0",
-            Color::Yellow => "255,247;5",
+            Color::Yellow => "255;247;5",
             Color::Green => "0;255;0",
             Color::LightBlue => "0;170;255",
             Color::DarkBlue => "15;32;189",

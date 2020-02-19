@@ -44,7 +44,7 @@ impl Default for PlayView {
 impl PlayView {
     pub fn render_at(&self, canvas: &mut Canvas, position: Position) {
         self.field.render_at(canvas, position);
-        canvas.add_texture(self.next_stone.clone(), &Position { x: 10, y: 0 });
+        canvas.add_texture(self.next_stone.clone(), &Position { x: 10, y: 1 });
         canvas.add_texture(self.current_stone.texture.clone(), &self.current_stone.position);
         canvas.add_themed_text(format!("level: {}", self.level).as_str(), &Position { x: 10, y: 6 });
         canvas.add_themed_text(format!("points: {}", self.points).as_str(), &Position { x: 10, y: 7 });
@@ -56,11 +56,10 @@ impl PlayView {
 
         let new_stone = Stone::new(
             Self::get_spawn_position(&self.next_stone.dimensions),
-            self.next_stone.clone(),
+            std::mem::replace(&mut self.next_stone, Stone::new_random_texture()),
         );
 
         self.current_stone = new_stone;
-        self.next_stone = Stone::new_random_texture();
     }
 
     fn get_spawn_position(dimensions: &Dimensions) -> Position {

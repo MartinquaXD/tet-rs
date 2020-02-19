@@ -44,7 +44,7 @@ impl Game {
                     return Ok(());
                 }
 
-                game.current_view.render_at(&mut canvas, Position { x: 0, y: 0 });
+                game.current_view.render_at(&mut canvas, Position { x: 0, y: 1 });
             }
             screen.write_all(canvas.get_printable_string().as_bytes()).await?;
             screen.flush().await?;
