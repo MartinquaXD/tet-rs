@@ -44,8 +44,8 @@ impl Default for PlayView {
 impl PlayView {
     pub fn render_at(&self, canvas: &mut Canvas, position: Position) {
         self.field.render_at(canvas, position);
-        canvas.add_texture(&self.next_stone, &Position { x: 10, y: 0 });
-        canvas.add_texture(&self.current_stone.texture, &self.current_stone.position);
+        canvas.add_texture(self.next_stone.clone(), &Position { x: 10, y: 0 });
+        canvas.add_texture(self.current_stone.texture.clone(), &self.current_stone.position);
         canvas.add_themed_text(format!("level: {}", self.level).as_str(), &Position { x: 10, y: 6 });
         canvas.add_themed_text(format!("points: {}", self.points).as_str(), &Position { x: 10, y: 7 });
         canvas.add_themed_paragraph(vec!["q - quit", "esq - menu", "arrows - move block"].as_slice(), Position { x: 0, y: 21 });

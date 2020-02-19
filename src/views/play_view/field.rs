@@ -14,7 +14,7 @@ impl Default for Field {
 
 impl Field {
     pub fn render_at(&self, canvas: &mut Canvas, position: Position) {
-        canvas.add_texture(&self.texture, &position);
+        canvas.add_texture(self.texture.clone(), &position);
     }
 
     pub fn get_tile_at_pos(&self, position: &Position) -> Option<&Tile> {

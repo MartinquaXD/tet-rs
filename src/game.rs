@@ -32,7 +32,7 @@ impl Game {
 
     pub async fn render(state_handle: Arc<Mutex<Game>>) -> tokio::io::Result<()> {
         let mut screen = tokio::io::stdout();
-        let mut render_loop = interval(Duration::from_millis(1000 / 60));
+        let mut render_loop = interval(Duration::from_millis(1000 / 30));
         let mut canvas = Canvas::default();
 
         loop {
@@ -46,7 +46,7 @@ impl Game {
 
                 game.current_view.render_at(&mut canvas, Position { x: 0, y: 0 });
             }
-            screen.write_all(canvas.to_printable_string().as_bytes()).await?;
+            screen.write_all(canvas.get_printable_string().as_bytes()).await?;
             screen.flush().await?;
         }
     }

@@ -30,13 +30,18 @@ impl Canvas {
         });
     }
 
-    pub fn to_printable_string(&mut self) -> &String {
+    pub fn get_printable_string(&mut self) -> &String {
         let mut buffer = std::mem::replace(&mut self.buffer, String::new());
         buffer.clear();
         buffer.push_str(crossterm::cursor::MoveTo(0, 0).to_string().as_str());
+
+        let mut previous_tile = &Tile::default();
+        previous_tile.fill_buffer_with_printable_string(&mut buffer);
+
         self.rows.iter().for_each(|row| {
             row.iter().for_each(|tile| {
-                tile.fill_buffer_with_printable_string(&mut buffer);
+                tile.fill_buffer_with_printable_string_with_respect_to_previous_tile(&mut buffer, &previous_tile);
+                previous_tile = tile;
             });
         });
         self.buffer = buffer;
@@ -64,10 +69,10 @@ impl Canvas {
             dimensions: Dimensions {width: text.len(), height: 1}
         };
 
-        self.add_texture(&texture, position);
+        self.add_texture(texture, position);
     }
 
-    pub fn add_texture(&mut self, texture: &Texture, position: &Position) {
+    pub fn add_texture(&mut self, texture: Texture, position: &Position) {
         use std::cmp::{max, min};
 
         let texture_dimensions = texture.dimensions;
@@ -78,10 +83,15 @@ impl Canvas {
         let start_row_texture = min(max(-position.y as isize, 0) as usize, texture_dimensions.height);
         let start_column_texture = min(max(-position.x as isize, 0) as usize, texture_dimensions.width);
 
-        self.rows[start_row_canvas..].iter_mut().zip(texture.pixels[start_row_texture..].iter()).for_each(|(canvas_row, texture_row)| {
-            canvas_row[start_column_canvas..].iter_mut().zip(texture_row[start_column_texture..].iter()).for_each(|(canvas_color, texture_color)| {
+
+
+        let texture_row_iterator = texture.pixels.into_iter().skip(start_row_texture);
+
+        self.rows[start_row_canvas..].iter_mut().zip(texture_row_iterator).for_each(|(canvas_row, texture_row)| {
+            let texture_column_iterator = texture_row.into_iter().skip(start_column_texture);
+            canvas_row[start_column_canvas..].iter_mut().zip(texture_column_iterator).for_each(|(canvas_color, texture_color)| {
                 if let Some(tile) = texture_color {
-                    *canvas_color = tile.clone();
+                    *canvas_color = tile;
                 }
             });
         });

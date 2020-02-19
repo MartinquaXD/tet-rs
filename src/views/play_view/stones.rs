@@ -17,7 +17,7 @@ impl Stone {
     }
 
     pub fn render_at(&self, canvas: &mut Canvas) {
-        canvas.add_texture(&self.texture, &self.position);
+        canvas.add_texture(self.texture.clone(), &self.position);
     }
 
     pub fn new_i() -> Texture {
