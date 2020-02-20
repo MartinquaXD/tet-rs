@@ -2,7 +2,7 @@ use super::field;
 use super::stones::Stone;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use std::time::Duration;
+use std::time::{Duration};
 use crate::game::Game;
 use tokio::time::delay_for;
 use crate::rendering::renderer::{Texture, Position, Canvas, Dimensions};
@@ -23,7 +23,7 @@ pub struct PlayView {
 
 impl Default for PlayView {
     fn default() -> Self {
-        let first_block_texture = Stone::new_random_texture();
+        let first_block_texture = Stone::new_i();
         let first_block_position = Self::get_spawn_position(&first_block_texture.dimensions);
 
         Self {
@@ -44,8 +44,8 @@ impl Default for PlayView {
 impl PlayView {
     pub fn render_at(&self, canvas: &mut Canvas, position: Position) {
         self.field.render_at(canvas, position);
-        canvas.add_texture(self.next_stone.clone(), &Position { x: 10, y: 1 });
         canvas.add_texture(self.current_stone.texture.clone(), &self.current_stone.position);
+        canvas.add_texture(self.next_stone.clone(), &Position { x: 10, y: 0 });
         canvas.add_themed_text(format!("level: {}", self.level).as_str(), &Position { x: 10, y: 6 });
         canvas.add_themed_text(format!("points: {}", self.points).as_str(), &Position { x: 10, y: 7 });
         canvas.add_themed_paragraph(vec!["q - quit", "esq - menu", "arrows - move block"].as_slice(), Position { x: 0, y: 21 });
@@ -58,7 +58,6 @@ impl PlayView {
             Self::get_spawn_position(&self.next_stone.dimensions),
             std::mem::replace(&mut self.next_stone, Stone::new_random_texture()),
         );
-
         self.current_stone = new_stone;
     }
 

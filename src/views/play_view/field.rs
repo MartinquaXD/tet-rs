@@ -18,6 +18,10 @@ impl Field {
     }
 
     pub fn get_tile_at_pos(&self, position: &Position) -> Option<&Tile> {
+        if position.y < 0 || position.x < 0 {
+            return None;
+        }
+
         if let Some(row) = self.texture.pixels.get(position.y as usize) {
             if let Some(Some(tile)) = row.get(position.x as usize) {
                 return Some(tile);
@@ -28,6 +32,10 @@ impl Field {
     }
 
     pub fn get_tile_at_pos_mut(&mut self, position: &Position) -> Option<&mut Tile> {
+        if position.y < 0 || position.x < 0 {
+            return None;
+        }
+
         if let Some(row) = self.texture.pixels.get_mut(position.y as usize) {
             if let Some(Some(tile)) = row.get_mut(position.x as usize) {
                 return Some(tile);
@@ -38,12 +46,14 @@ impl Field {
     }
 
     pub fn all_positions_free(&self, positions: &[Position]) -> bool {
-        positions.iter().all(|position| {
-            match self.get_tile_at_pos(position) {
-                Some(tile) => tile.background == Color::Gray,
-                None => true
-            }
-        })
+        positions.iter().all(|position| self.position_free(position))
+    }
+
+    pub fn position_free(&self, position: &Position) -> bool {
+        match self.get_tile_at_pos(position) {
+            Some(tile) => tile.background == Color::Gray,
+            None => true
+        }
     }
 
     fn row_is_full(row: &Vec<Option<Tile>>) -> bool {
@@ -90,5 +100,37 @@ impl Field {
 
     pub fn dimensions(&self) -> &Dimensions {
         &self.texture.dimensions
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use crate::views::play_view::field::Field;
+    use crate::rendering::renderer::{Tile, Color, Position};
+    use crate::views::play_view::stones::Stone;
+
+    #[test]
+    fn get_tile_at_pos() {
+        let mut field = Field::default();
+        *field.texture.pixels.get_mut(3).unwrap().get_mut(2).unwrap() = Some(Tile::new_background(Color::Red));
+        let tile_at_pos = field.get_tile_at_pos(&Position{x: 2, y: 3});
+        let color = tile_at_pos.unwrap().background;
+        assert_eq!(color, Color::Red);
+        assert!(!field.all_positions_free(&[Position{x: 2, y: 3}]));
+        assert!(field.all_positions_free(&[Position{x: 3, y: 3}]));
+    }
+
+    #[test]
+    fn add_texture() {
+        let mut field = Field::default();
+        let stone = Stone::new(Position{y: 4, x: 2}, Stone::new_t());
+        field.add_to_texture(stone.texture, stone.position);
+        assert!(field.position_free(&Position{y: 4, x: 2}));
+        assert!(!field.position_free(&Position{y: 4, x: 3}));
+        assert!(field.position_free(&Position{y: 4, x: 4}));
+        assert!(!field.position_free(&Position{y: 5, x: 2}));
+        assert!(!field.position_free(&Position{y: 5, x: 3}));
+        assert!(!field.position_free(&Position{y: 5, x: 4}));
     }
 }

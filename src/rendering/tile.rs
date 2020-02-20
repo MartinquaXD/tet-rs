@@ -39,12 +39,16 @@ impl Tile {
     }
 
     pub fn fill_buffer_with_printable_string(&self, buffer: &mut String) {
+        self.apply_colors_of_tile_to_buffer(buffer);
+        buffer.push(self.text);
+    }
+
+    pub fn apply_colors_of_tile_to_buffer(&self, buffer: &mut String) {
         buffer.push_str("\u{1b}[48;2;");
         buffer.push_str(self.background.to_ansi());
         buffer.push_str(";38;2;");
         buffer.push_str(self.foreground.to_ansi());
         buffer.push('m');
-        buffer.push(self.text);
     }
 
     pub fn fill_buffer_with_printable_string_with_respect_to_previous_tile(&self, buffer: &mut String, previous_tile: &Tile) {

@@ -110,32 +110,26 @@ impl Stone {
     fn left_most_points(&self) -> Vec<Position> {
         self.texture.pixels.iter().enumerate().map(|(row_number, columns)| {
             let left_most = columns.iter().enumerate().find_map(|(index, tile)| {
-                if tile.is_some() {
-                    Some(index)
-                } else {
-                    None
-                }
+                if tile.is_some() { Some(index as i8) } else { None }
             });
 
             Position {
-                x: left_most.unwrap() as i8 + self.position.x,
+                x: self.position.x + left_most.unwrap(),
                 y: self.position.y + row_number as i8,
             }
         }).collect()
     }
 
+
+
     fn right_most_points(&self) -> Vec<Position> {
         self.texture.pixels.iter().enumerate().map(|(row_number, columns)| {
             let right_most = columns.iter().enumerate().rev().find_map(|(index, tile)| {
-                if tile.is_some() {
-                    Some(index)
-                } else {
-                    None
-                }
+                if tile.is_some() { Some(index as i8) } else { None }
             });
 
             Position {
-                x: right_most.unwrap() as i8 + self.position.x,
+                x: self.position.x + right_most.unwrap(),
                 y: self.position.y + row_number as i8,
             }
         }).collect()
@@ -159,23 +153,23 @@ impl Stone {
 
     fn can_move_left(&self, field: &Field) -> bool {
         let not_on_left_border = self.position.x > 0;
-        let mut fields_to_the_left = self.left_most_points();
-        fields_to_the_left.iter_mut().for_each(|pos| pos.move_left());
-        not_on_left_border && field.all_positions_free(fields_to_the_left.as_slice())
+        let mut positions_to_left = self.left_most_points();
+        positions_to_left.iter_mut().for_each(|position| position.move_left());
+        not_on_left_border && field.all_positions_free(positions_to_left.as_slice())
     }
 
     fn can_move_right(&self, field: &Field) -> bool {
         let not_on_right_border = self.position.x as usize + self.texture.dimensions.width < field.texture.dimensions.width;
-        let mut fields_to_the_right = self.right_most_points();
-        fields_to_the_right.iter_mut().for_each(|pos| pos.move_right());
-        not_on_right_border && field.all_positions_free(fields_to_the_right.as_slice())
+        let mut positions_to_right = self.right_most_points();
+        positions_to_right.iter_mut().for_each(|position| position.move_right());
+        not_on_right_border && field.all_positions_free(positions_to_right.as_slice())
     }
 
-    fn can_move_down(&mut self, field: &Field) -> bool {
+    fn can_move_down(&self, field: &Field) -> bool {
         let not_at_bottom = (self.position.y + self.texture.dimensions.height as i8) < 20;
-        let mut bottom_fields = self.bottom_points();
-        bottom_fields.iter_mut().for_each(|pos| pos.move_down());
-        not_at_bottom && field.all_positions_free(bottom_fields.as_slice())
+        let mut bottom_positions = self.bottom_points();
+        bottom_positions.iter_mut().for_each(|position| position.move_down());
+        not_at_bottom && field.all_positions_free(bottom_positions.as_slice())
     }
 
     pub fn move_down(&mut self, field: &Field) -> bool {
@@ -220,5 +214,41 @@ impl Stone {
         } else {
             false
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::views::play_view::stones::Stone;
+    use crate::rendering::renderer::Position;
+
+    #[test]
+    fn right_points() {
+        let mut t_stone = Stone::new(Position{x: 2, y: -1}, Stone::new_t());
+        t_stone.texture.rotate();
+        let right_points = t_stone.right_most_points();
+        let expected = vec![Position{x: 2, y: -1}, Position{x: 3, y: 0}, Position{x: 2, y: 1}];
+        assert_eq!(expected, right_points);
+    }
+
+    #[test]
+    fn left_points() {
+        let mut t_stone = Stone::new(Position{x: 2, y: -1}, Stone::new_t());
+        t_stone.texture.rotate();
+        t_stone.texture.rotate();
+        t_stone.texture.rotate();
+        let left_points = t_stone.left_most_points();
+        let expected = vec![Position{x: 3, y: -1}, Position{x: 2, y: 0}, Position{x: 3, y: 1}];
+        assert_eq!(expected, left_points);
+    }
+
+    #[test]
+    fn bottom_points() {
+        let mut t_stone = Stone::new(Position{x: 2, y: -1}, Stone::new_t());
+        t_stone.texture.rotate();
+        t_stone.texture.rotate();
+        let bottom_points = t_stone.bottom_points();
+        let expected = vec![Position{x: 2, y: -1}, Position{x: 3, y: 0}, Position{x: 4, y: -1}];
+        assert_eq!(expected, bottom_points);
     }
 }

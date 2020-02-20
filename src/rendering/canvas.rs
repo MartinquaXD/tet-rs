@@ -12,7 +12,8 @@ pub struct Canvas {
 
 impl Default for Canvas {
     fn default() -> Self {
-        let (width, height) = crossterm::terminal::size().unwrap();
+        let (width, mut height) = crossterm::terminal::size().unwrap();
+        height -= 1;
         Self {
             dimensions: Dimensions { width: width as usize, height: height as usize },
             rows: vec![vec![Tile::default(); width as usize]; height as usize],
@@ -30,13 +31,14 @@ impl Canvas {
         });
     }
 
+
     pub fn get_printable_string(&mut self) -> &String {
         let mut buffer = std::mem::replace(&mut self.buffer, String::new());
         buffer.clear();
         buffer.push_str(crossterm::cursor::MoveTo(0, 0).to_string().as_str());
 
         let mut previous_tile = &Tile::default();
-        previous_tile.fill_buffer_with_printable_string(&mut buffer);
+        previous_tile.apply_colors_of_tile_to_buffer(&mut buffer);
 
         self.rows.iter().for_each(|row| {
             row.iter().for_each(|tile| {
@@ -75,17 +77,16 @@ impl Canvas {
     pub fn add_texture(&mut self, texture: Texture, position: &Position) {
         use std::cmp::{max, min};
 
-        let texture_dimensions = texture.dimensions;
+        let skip_canvas_rows = min(max(position.y, 0), self.dimensions.height as i8) as usize;
+        let start_column_canvas = min(max(position.x, 0), self.dimensions.width as i8) as usize;
 
-        let start_row_canvas = position.y.clamp(0, self.dimensions.height as i8) as usize;
-        let start_column_canvas = position.x.clamp(0, self.dimensions.width as i8) as usize;
 
-        let start_row_texture = min(max(-position.y as isize, 0) as usize, texture_dimensions.height);
-        let start_column_texture = min(max(-position.x as isize, 0) as usize, texture_dimensions.width);
+        let skip_texture_rows = if position.y < 0 { -position.y as usize } else { 0 };
+        let start_column_texture = if position.x < 0 { -position.x as usize } else { 0 };
 
-        let texture_row_iterator = texture.pixels.into_iter().skip(start_row_texture);
+        let texture_row_iterator = texture.pixels.into_iter().skip(skip_texture_rows);
 
-        self.rows.iter_mut().skip(start_row_canvas).zip(texture_row_iterator)
+        self.rows.iter_mut().skip(skip_canvas_rows).zip(texture_row_iterator)
             .for_each(|(canvas_row, texture_row)| {
                 let texture_column_iterator = texture_row.into_iter().skip(start_column_texture);
 

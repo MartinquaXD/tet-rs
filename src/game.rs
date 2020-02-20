@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration};
 use tokio::time::interval;
 use std::sync::Arc;
 use tokio::sync::Mutex;
@@ -43,8 +43,7 @@ impl Game {
                 if !game.running {
                     return Ok(());
                 }
-
-                game.current_view.render_at(&mut canvas, Position { x: 0, y: 1 });
+                game.current_view.render_at(&mut canvas, Position { x: 0, y: 0 });
             }
             screen.write_all(canvas.get_printable_string().as_bytes()).await?;
             screen.flush().await?;

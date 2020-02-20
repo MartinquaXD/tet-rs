@@ -10,7 +10,7 @@ edition = "2018"
 crossterm = {version = "0.14.1", features=["event-stream"]}
 rand = "0.7"
 tokio = {version="0.2.9", features=["time", "io-util", "sync", "stream", "rt-core", "io-std", "macros"]}
-
+jemallocator = "0.3"
 
 [profile.release]
 opt-level = 3
