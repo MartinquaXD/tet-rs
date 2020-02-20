@@ -2,11 +2,6 @@
 #![allow(dead_code)]
 
 
-#[global_allocator]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
-
-
-
 use crate::game::Game;
 use crossterm::terminal::{enable_raw_mode, disable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen, Clear, ClearType};
 use crossterm::cursor::{Show, Hide};
